@@ -2,32 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+@font-face {
+  font-family: "PixeloidSans";
+  src: url("../fonts/PixeloidSans.ttf") format("truetype");
+  font-weight: normal;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+@font-face {
+  font-family: "PixeloidSans";
+  src: url("../fonts/PixeloidSans-Bold.ttf") format("truetype");
+  font-weight: bold; /* Specify the font-weight for the bold font */
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+@font-face {
+  font-family: "Cousine";
+  src: url("../fonts/Cousine-Regular.ttf") format("truetype");
+  font-weight: bold; /* Specify the font-weight for the bold font */
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+main {
+  font-family: "PixeloidSans", sans-serif;
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: white;
+  height: 100vh;
+}
+
+.layout {
+  background-image: url("../assets/background.png");
+  background-color: #418a2c;
+}
+
+.home {
+  font-family: "Cousine", sans-serif;
+  font-weight: 200;
+  font-size: 1.1rem;
+  border: 1px solid white;
+  color: white;
+}
+
+.connect-wallet-header .wallet-adapter-button-trigger {
+  font-family: "PixeloidSans", sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  border: 1px solid white;
+  background-color: transparent !important;
+  color: white !important;
+}
+
+.connect-wallet-mint .wallet-adapter-button-trigger {
+  font-family: "Cousine", sans-serif;
+  font-weight: 200;
+  background-color: transparent !important;
+  color: white !important;
+}
+
+.mint-button-header {
+  font-family: "PixeloidSans", sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  border: 1px solid white;
+  background-color: transparent !important;
+  color: white !important;
+  padding: 12px 24px;
+}
+
+.selected-group {
+  --tw-border-opacity: 1;
+  border-bottom-color: rgb(37 99 235 / var(--tw-border-opacity)) !important;
+}
+
+.not-selected-group {
+  border-bottom-color: transparent !important;
 }

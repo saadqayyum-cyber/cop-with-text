@@ -1,13 +1,13 @@
-import Home from "@/components/Home";
+import Mint from "@/components/Mint";
 import Head from "next/head";
 
-export default function HomePage() {
+export default function MintPage() {
   return (
     <>
       <Head>
         <title>Cop With Text</title>
       </Head>
-      <Home />
+      <Mint />
     </>
   );
 }

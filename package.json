@@ -9,19 +9,36 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@metaplex-foundation/js": "^0.20.1",
+    "@metaplex-foundation/mpl-candy-guard": "^0.5.0",
+    "@metaplex-foundation/mpl-candy-machine": "^6.0.1",
+    "@metaplex-foundation/mpl-candy-machine-core": "^0.2.2",
+    "@metaplex-foundation/umi": "^0.9.1",
+    "@metaplex-foundation/umi-bundle-defaults": "^0.9.1",
+    "@metaplex-foundation/umi-signer-wallet-adapters": "^0.9.1",
+    "@solana/spl-token": "^0.4.0",
+    "@solana/wallet-adapter-base": "^0.9.23",
+    "@solana/wallet-adapter-react": "^0.15.35",
+    "@solana/wallet-adapter-react-ui": "^0.9.35",
+    "@solana/wallet-adapter-wallets": "^0.19.26",
+    "@solana/web3.js": "^1.90.0",
+    "bs58": "^5.0.0",
+    "next": "14.1.0",
     "react": "^18",
     "react-dom": "^18",
-    "next": "14.1.0"
+    "react-hot-toast": "^2.4.1",
+    "react-loader-spinner": "^6.1.6",
+    "sweetalert2": "^11.10.5"
   },
   "devDependencies": {
-    "typescript": "^5",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.1.0",
     "postcss": "^8",
     "tailwindcss": "^3.3.0",
-    "eslint": "^8",
-    "eslint-config-next": "14.1.0"
+    "typescript": "^5"
   }
 }
