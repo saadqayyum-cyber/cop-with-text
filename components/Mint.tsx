@@ -318,7 +318,7 @@ function Mint() {
             } rounded-se-xl text-sm font-medium text-center overflow-hidden hover:bg-gray-50 focus:z-10 dark:bg-gray-800 dark:text-gray-300`}
             onClick={() => handleGroupChange(MINT_GROUPS.MONKE)}
           >
-            Saga Monkeys Free Mint
+            Saga Monkes Free Mint
           </div>
         </nav>
 
