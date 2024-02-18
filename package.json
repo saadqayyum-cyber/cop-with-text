@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@metaplex-foundation/digital-asset-standard-api": "^1.0.3",
     "@metaplex-foundation/js": "^0.20.1",
     "@metaplex-foundation/mpl-candy-guard": "^0.5.0",
     "@metaplex-foundation/mpl-candy-machine": "^6.0.1",

@@ -26,12 +26,15 @@ import { Connection } from "@solana/web3.js";
 import toast from "react-hot-toast";
 import * as bs58 from "bs58";
 import Swal from "sweetalert2";
+import { dasApi } from "@metaplex-foundation/digital-asset-standard-api";
 
 // UMI Setup
 let umi: Umi;
 let metaplex: Metaplex;
+let dasUmi: Umi;
 
 const RPC_ENDPOINT_URL = process.env.NEXT_PUBLIC_RPC_ENDPOINT_URL;
+const HELIUS_RPC_URL = process.env.NEXT_PUBLIC_HELIUS_RPC_URL;
 
 if (RPC_ENDPOINT_URL) {
   // Init UMI
@@ -41,6 +44,13 @@ if (RPC_ENDPOINT_URL) {
   metaplex = new Metaplex(connection);
 } else {
   throw new Error("RPC_ENDPOINT is not defined. Please provide NEXT_PUBLIC_RPC_ENDPOINT_URL env variable.");
+}
+
+if (HELIUS_RPC_URL) {
+  // DAS UMI
+  dasUmi = createUmi(HELIUS_RPC_URL).use(dasApi());
+} else {
+  throw new Error("HELIUS_RPC_URL is not defined. Please provide NEXT_PUBLIC_HELIUS_RPC_URL env variable.");
 }
 
 function Mint() {
@@ -53,6 +63,8 @@ function Mint() {
   const [isLoading, setIsLoading] = useState(false);
   const [nftsMinted, setNFTsMinted] = useState(0);
   const [totalNFTs, setTotalNFTs] = useState(0);
+  const [candyMachineFetchTrigger, setCandyMachineFetchTrigger] = useState(false);
+
   const handleGroupChange = (_selectedMintGroup: MintGroup) => {
     setSelectedGroup(_selectedMintGroup);
   };
@@ -60,7 +72,7 @@ function Mint() {
   // Set Candy Machine and Candy Guard On Mount
   const CANDY_MACHINE_ID = process.env.NEXT_PUBLIC_CANDY_MACHINE_ID;
 
-  const fetchCandyMachineData = useCallback(async () => {
+  const fetchCandyMachineData = async () => {
     if (!CANDY_MACHINE_ID) throw new Error("Please, provide a NEXT_PUBLIC_CANDY_MACHINE_ID env variable");
     const candyMachinePublicKey = publicKey(CANDY_MACHINE_ID);
     const candyMachine = await fetchCandyMachine(umi, candyMachinePublicKey);
@@ -70,11 +82,11 @@ function Mint() {
     setCandyGuard(candyGuard);
     setTotalNFTs(candyMachine.itemsLoaded);
     setNFTsMinted(+candyMachine.itemsRedeemed.toString());
-  }, [CANDY_MACHINE_ID]);
+  };
 
   useEffect(() => {
     fetchCandyMachineData();
-  }, [fetchCandyMachineData]);
+  }, [candyMachineFetchTrigger]);
 
   // Mint
   const handleMint = async () => {
@@ -86,7 +98,6 @@ function Mint() {
     const { groups } = candyGuard;
     const umiWalletAdapter = umi.use(walletAdapterIdentity(wallet));
     const nftMint = generateSigner(umiWalletAdapter);
-    // const thirdPartySigner = generateSigner(umiWalletAdapter);
     let group: Option<string>;
     let mintArgs: Partial<DefaultGuardSetMintArgs> = {};
 
@@ -121,33 +132,78 @@ function Mint() {
         return;
       }
 
-      const result = await mintGroupsHelper(nftGateGuard, MINT_GROUPS.GENESIS);
-      if (result === undefined) {
-        console.log("No Mint Args Found");
-        return;
-      }
+      const nftGate: NftGate | null = unwrapOption(nftGateGuard);
 
-      mintArgs = result;
+      if (nftGate) {
+        const collectionMint = new PublicKey(nftGate.requiredCollection);
+        console.log({ collectionMint });
+
+        if (!wallet.publicKey) {
+          toast.error("User Wallet address not found.");
+          return;
+        }
+
+        const userNFTs = await metaplex.nfts().findAllByOwner({
+          owner: wallet.publicKey,
+        });
+
+        const filteredNfts = userNFTs.filter((nft) => nft.collection && nft.collection.address.equals(collectionMint));
+
+        if (filteredNfts.length === 0) {
+          toast.error("You do not own any NFT from Saga Genesis Collection.");
+          setIsLoading(false);
+          return;
+        }
+
+        interface ExtendedNFT extends Nft {
+          mintAddress: {
+            readonly toBase58: () => string;
+          };
+        }
+
+        const nftMint = filteredNfts[0] as ExtendedNFT;
+        const nftMintStringAddress = nftMint.mintAddress.toBase58();
+        const nftMintUmiPublicKey = publicKey(nftMintStringAddress);
+
+        mintArgs.nftGate = some({
+          mint: nftMintUmiPublicKey,
+        });
+
+        mintArgs.mintLimit = {
+          id: 1,
+        };
+      }
     }
+
     // 3. SM
     else if (selectedGroup === MINT_GROUPS.MONKE) {
       group = some(MINT_GROUPS.MONKE);
 
-      const guards = groups.find((group) => group.label === MINT_GROUPS.MONKE)?.guards;
-      const nftGateGuard: Option<NftGate> | undefined = guards?.nftGate;
-
-      if (nftGateGuard === undefined) {
-        toast.error("NFT Gate guard not available");
+      const walletAddress = wallet?.publicKey?.toBase58();
+      if (walletAddress === undefined) {
+        toast.error("Please connect Wallet.");
         return;
       }
 
-      const result = await mintGroupsHelper(nftGateGuard, MINT_GROUPS.MONKE);
-      if (result === undefined) {
-        console.log("No Mint Args Found");
+      const rpcAssetList = await dasUmi.rpc.getAssetsByOwner({
+        owner: publicKey(walletAddress),
+      });
+
+      const cnft = rpcAssetList.items.find(
+        (item) =>
+          item.grouping[0]?.group_key == "collection" &&
+          item.grouping?.[0]?.group_value == "GokAiStXz2Kqbxwz2oqzfEXuUhE7aXySmBGEP7uejKXF"
+      );
+
+      if (!cnft) {
+        toast.error("You do not own any NFT from Saga Monke Collection.");
+        setIsLoading(false);
         return;
       }
 
-      mintArgs = result;
+      mintArgs.mintLimit = {
+        id: 2,
+      };
     }
     // 4. NO GROUP
     else {
@@ -156,7 +212,7 @@ function Mint() {
     }
 
     try {
-      const transaction = await transactionBuilder()
+      const transaction = transactionBuilder()
         .add(setComputeUnitLimit(umiWalletAdapter, { units: 800_000 }))
         .add(
           mintV2(umiWalletAdapter, {
@@ -174,6 +230,8 @@ function Mint() {
       const { signature } = await transaction.sendAndConfirm(umi, {
         confirm: { commitment: "confirmed" },
       });
+
+      if (!signature) return;
 
       const txid = bs58.encode(signature);
       console.log("success", `Mint successful! ${txid}`);
@@ -200,6 +258,10 @@ function Mint() {
           confirmButton: "swal-confirm-button",
         },
       });
+
+      // setTimeout(() => {
+      //   setCandyMachineFetchTrigger((prevState) => !prevState);
+      // }, 8000);
     } catch (e: any) {
       if (e.toString().includes("Error Code: CandyMachineEmpty")) {
         toast.error("All NFTs have been minted!");
@@ -218,65 +280,6 @@ function Mint() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const mintGroupsHelper = async (nftGateGuard: Option<NftGate>, mintGroup: MintGroup) => {
-    let mintGroupLimitId;
-    let error;
-
-    if (mintGroup === MINT_GROUPS.GENESIS) {
-      mintGroupLimitId = 1;
-      error = "You do not own any NFT from Saga Genesis Collection.";
-    } else {
-      mintGroupLimitId = 2;
-      error = "You do not own any NFT from Saga Monkes Collection.";
-    }
-
-    let mintArgs: Partial<DefaultGuardSetMintArgs> = {};
-
-    const nftGate: NftGate | null = unwrapOption(nftGateGuard);
-
-    if (nftGate) {
-      const collectionMint = new PublicKey(nftGate.requiredCollection);
-      console.log({ collectionMint });
-
-      if (!wallet.publicKey) {
-        toast.error("User Wallet address not found.");
-        return;
-      }
-
-      const userNFTs = await metaplex.nfts().findAllByOwner({
-        owner: wallet.publicKey,
-      });
-
-      const filteredNfts = userNFTs.filter((nft) => nft.collection && nft.collection.address.equals(collectionMint));
-
-      if (filteredNfts.length === 0) {
-        toast.error(error);
-        setIsLoading(false);
-        return;
-      }
-
-      interface ExtendedNFT extends Nft {
-        mintAddress: {
-          readonly toBase58: () => string;
-        };
-      }
-
-      const nftMint = filteredNfts[0] as ExtendedNFT;
-      const nftMintStringAddress = nftMint.mintAddress.toBase58();
-      const nftMintUmiPublicKey = publicKey(nftMintStringAddress);
-
-      mintArgs.nftGate = some({
-        mint: nftMintUmiPublicKey,
-      });
-
-      mintArgs.mintLimit = {
-        id: mintGroupLimitId,
-      };
-    }
-
-    return mintArgs;
   };
 
   return (
