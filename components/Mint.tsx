@@ -129,6 +129,7 @@ function Mint() {
 
       if (nftGateGuard === undefined) {
         toast.error("NFT Gate guard not available");
+        setIsLoading(false);
         return;
       }
 
@@ -140,6 +141,7 @@ function Mint() {
 
         if (!wallet.publicKey) {
           toast.error("User Wallet address not found.");
+          setIsLoading(false);
           return;
         }
 
@@ -205,9 +207,67 @@ function Mint() {
         id: 2,
       };
     }
-    // 4. NO GROUP
+
+    // 4. LSW
+    else if (selectedGroup === MINT_GROUPS.SWAG) {
+      group = some(MINT_GROUPS.SWAG);
+
+      const guards = groups.find((group) => group.label === MINT_GROUPS.SWAG)?.guards;
+      const nftGateGuard: Option<NftGate> | undefined = guards?.nftGate;
+
+      if (nftGateGuard === undefined) {
+        toast.error("NFT Gate guard not available");
+        setIsLoading(false);
+        return;
+      }
+
+      const nftGate: NftGate | null = unwrapOption(nftGateGuard);
+
+      if (nftGate) {
+        const collectionMint = new PublicKey(nftGate.requiredCollection);
+
+        if (!wallet.publicKey) {
+          toast.error("User Wallet address not found.");
+          setIsLoading(false);
+          return;
+        }
+
+        const userNFTs = await metaplex.nfts().findAllByOwner({
+          owner: wallet.publicKey,
+        });
+
+        const filteredNfts = userNFTs.filter((nft) => nft.collection && nft.collection.address.equals(collectionMint));
+
+        if (filteredNfts.length === 0) {
+          toast.error("You do not own any NFT from Little Swag World Collection.");
+          setIsLoading(false);
+          return;
+        }
+
+        interface ExtendedNFT extends Nft {
+          mintAddress: {
+            readonly toBase58: () => string;
+          };
+        }
+
+        const nftMint = filteredNfts[0] as ExtendedNFT;
+        const nftMintStringAddress = nftMint.mintAddress.toBase58();
+        const nftMintUmiPublicKey = publicKey(nftMintStringAddress);
+
+        mintArgs.nftGate = some({
+          mint: nftMintUmiPublicKey,
+        });
+
+        mintArgs.mintLimit = {
+          id: 3,
+        };
+      }
+    }
+
+    // 5. NO GROUP
     else {
       toast.error("Mint group is not provided");
+      setIsLoading(false);
       return;
     }
 
@@ -285,7 +345,7 @@ function Mint() {
   return (
     <div className="h-screen flex justify-center items-center">
       {/* Card */}
-      <div className="w-80 sm:w-[24em] border shadow-sm rounded-xl bg-black dark:border-gray-700 dark:shadow-slate-700/[.7]">
+      <div className="w-80 sm:w-[27em] border shadow-sm rounded-xl bg-black dark:border-gray-700 dark:shadow-slate-700/[.7]">
         {/* Nav Tabs */}
         <nav
           className="relative z-0 flex border-b rounded-xl divide-x divide-gray-200 dark:border-gray-700 dark:divide-gray-700"
@@ -318,10 +378,21 @@ function Mint() {
               selectedGroup === MINT_GROUPS.MONKE
                 ? "selected-group text-white"
                 : "not-selected-group text-gray-500 hover:text-gray-700"
-            } rounded-se-xl text-sm font-medium text-center overflow-hidden hover:bg-gray-50 focus:z-10 dark:bg-gray-800 dark:text-gray-300`}
+            } text-sm font-medium text-center overflow-hidden hover:bg-gray-50 focus:z-10 dark:bg-gray-800 dark:text-gray-300`}
             onClick={() => handleGroupChange(MINT_GROUPS.MONKE)}
           >
             Saga Monkes Free Mint
+          </div>
+
+          <div
+            className={`group relative min-w-0 flex-1 py-4 px-4 cursor-pointer border-b-2 ${
+              selectedGroup === MINT_GROUPS.SWAG
+                ? "selected-group text-white"
+                : "not-selected-group text-gray-500 hover:text-gray-700"
+            } rounded-se-xl text-sm font-medium text-center overflow-hidden hover:bg-gray-50 focus:z-10 dark:bg-gray-800 dark:text-gray-300`}
+            onClick={() => handleGroupChange(MINT_GROUPS.SWAG)}
+          >
+            Little Swag World Free Mint
           </div>
         </nav>
 
