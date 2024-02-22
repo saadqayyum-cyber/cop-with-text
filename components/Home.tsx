@@ -11,8 +11,8 @@ function Home() {
     <div className="px-2 sm:px-6 md:px-10 lg:px-14 xl:px-24 py-28">
       <div className="bg-black flex flex-col justify-center items-start home p-12">
         <p className="pb-14">
-          Cop With Text is a 3333 image collection with 2.5% royalties. I airdropped the first 40 to some random addresses. It is
-          now a free mint for Saga Genesis Holders & Saga Monkes holders & public mint is .05 SOL.
+          Cop With Text is a 3333 image collection with 2.5% royalties. I airdropped the first 40 to some random addresses.It is
+          now a free mint to saga genesis holders, saga monke holders and little swag world holders.
           <br /> <br />I began the series Cop With Text 20 years ago when I witnessed a police officer looking at a Nokia brick
           while a crime was occurring. That night I went home and I imagined what must have been so important to create that
           distraction. That night I drew the image of the cop on the phone. For years I came back to this theme and made image
